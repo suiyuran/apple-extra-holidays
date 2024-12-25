@@ -2,7 +2,6 @@ from calendar import monthcalendar
 from datetime import datetime
 from uuid import UUID
 from uuid import uuid3
-from uuid import uuid4
 
 from icalendar import Calendar
 from icalendar import Event
@@ -38,7 +37,7 @@ def create_calendar():
 def create_event(summary: str, dtstart: str):
     event = Event()
     event.add("DTSTAMP;VALUE=DATE", "19760401")
-    event.add("UID", uuid4())
+    event.add("UID", uuid3(NAMESPACE_HOLIDAY, dtstart))
     event.add("DTSTART;VALUE=DATE", dtstart)
     event.add("CLASS", "PUBLIC")
     event.add("SUMMARY;LANGUAGE=zh-CN", summary)
@@ -56,15 +55,18 @@ def create_date(year: int, month: int, day: int | tuple[int, int]):
     return datetime(year, month, day).strftime("%Y%m%d")
 
 
+def create_holidays(year: int):
+    holidays = []
+    for key in HOLIDAYS.keys():
+        month, day = HOLIDAYS[key]
+        holidays.append(create_event(key, create_date(year, month, day)))
+    return holidays
+
+
 def main():
     year = datetime.now().year
     calender = create_calendar()
-    holidays = map(
-        lambda key: create_event(
-            key, create_date(year, HOLIDAYS[key][0], HOLIDAYS[key][1])
-        ),
-        HOLIDAYS.keys(),
-    )
+    holidays = sum(map(create_holidays, [year, year + 1]), [])
 
     for holiday in holidays:
         calender.add_component(holiday)
